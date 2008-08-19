@@ -19,6 +19,7 @@ var Calendar = new Class({
 		days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], // days of the week starting at sunday
 		direction: 0, // -1 past, 0 past + future, 1 future
 		draggable: true,
+		format:'jS M Y g:i a';
 		months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
 		navigation: 1, // 0 = no nav; 1 = single nav for month; 2 = dual nav for month and year
 		offset: 0, // first day of the week: 0 = sunday, 1 = monday, etc..
@@ -26,7 +27,7 @@ var Calendar = new Class({
 		onHideComplete: Class.empty,
 		onShowStart: Class.empty,
 		onShowComplete: Class.empty,
-		pad: 1, // padding between multiple calendars
+		pad: {days:1,mins:0}, // padding between multiple calendars
 		tweak: {x: 0, y: 0} // tweak calendar positioning
 	},
 
@@ -104,7 +105,7 @@ var Calendar = new Class({
 		var id = 0;
 		var d = new Date(); // today
 
-		d.setDate(d.getDate() + this.options.direction.toInt()); // correct today for directional offset
+		d.setTime(d.getTime() + this.options.direction.toInt()*60000); // correct today for directional offset
 
 		for (var i in obj) {
 			var cal = { 
@@ -603,11 +604,16 @@ var Calendar = new Class({
 		
 		if (date) {
 			var j = date.getDate(); // 1 - 31
-      var w = date.getDay(); // 0 - 6
+			var w = date.getDay(); // 0 - 6
 			var l = this.options.days[w]; // Sunday - Saturday
 			var n = date.getMonth() + 1; // 1 - 12
 			var f = this.options.months[n - 1]; // January - December
 			var y = date.getFullYear() + ''; // 19xx - 20xx
+			var h = date.getHours(); // 0 - 23
+			var G = h + '';			// h as string
+			var g = (h == 0)?12:((h > 12)?h-12:h) + ''; // '1' to '12'
+			var i = date.getMinutes() + ''; //'0' - '59'
+			i = (i.length == 1)?'0'+i:i;
 			
 			for (var i = 0, len = format.length; i < len; i++) {
 				var cha = format.charAt(i); // format char
@@ -659,6 +665,25 @@ var Calendar = new Class({
 						else { str += 'th'; }
 						break;
 	
+					case 'a' :
+						str += (h < 12)? 'am':'pm';
+						break;
+
+					case 'A' :
+						str += (h < 12)? 'AM':'PM';
+						break;
+
+					case 'g' :
+						str += g;
+						break;
+					case 'h' :
+						str += 	(g.length == 1)?'0'+g:g;
+						break;
+					case 'G' :
+						str += G;
+					case 'H' :
+						str += 	(G.length == 1)?'0'+G:G;
+						break;
 					default:
 						str += cha;
 				}
