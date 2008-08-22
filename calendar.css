@@ -1,9 +1,14 @@
 /* Calendar: a Javascript class for Mootools that adds accessible and unobtrusive date pickers to your form elements <http://electricprism.com/aeron/calendar> */
 /* Calendar CSS for Calendar (navigation: 1), Copyright (c) 2007 Aeron Glemann <http://electricprism.com/aeron> */
-
-input.calendar,
-select.calendar {
+div.calendar {
+	width:175px;
+	height:20px;
+}
+span.calendar {
 	width: 149px;
+	border:1px dotted black;
+	padding:2px;
+	margin-right:5px;
 }
 
 button.calendar {
@@ -12,7 +17,6 @@ button.calendar {
 	cursor: pointer;
 	float: left;
 	height: 20px;
-	margin-right: 10px;
 	width: 20px;
 }
 button.calendar:hover,
@@ -20,18 +24,18 @@ button.calendar.active {
 	background-position: 0 20px;
 }
 
-div.calendar {
+div.picker {
 	background: url(calendar.png);
 	height: 175px;
 	padding: 0 12px;
 	text-align: center;
 	width: 147px;
 }	
-	div.calendar * {
+	div.picker * {
 		margin: 0;
 		padding: 0;
 	}	
-	div.calendar div {
+	div.picker div {
 		background: none !important;
 		cursor: move;
 		height: 165px;
@@ -41,14 +45,14 @@ div.calendar {
 		width: 147px;
 	}	
 	
-	div.calendar caption {
+	div.picker caption {
 		color: #CF0;
 		font: normal 12px/17px Arial, Helvetica, sans-serif;
 		padding-top: 4px;
 		text-align: center;
 		width: 100%;
 	}
-	div.calendar caption a {
+	div.picker caption a {
 		cursor: pointer;
 		display: block;
 		height: 11px;
@@ -58,26 +62,26 @@ div.calendar {
 		top: 16px;
 		width: 11px;
 	}
-	div.calendar caption a.prev {
+	div.picker caption a.prev {
 		background-image: url(calendar-prev.gif);
 		left: 1px;
 	}
-	div.calendar caption a.next {
+	div.picker caption a.next {
 		background-image: url(calendar-next.gif);
 		right: 1px;
 	}
-	div.calendar caption a:hover {
+	div.picker caption a:hover {
 		background-position: 0 11px;
 	}
-	div.calendar caption span {
+	div.picker caption span {
 		height: 25px;
 		position: relative;
 		text-align: center;
 	}
-	div.calendar caption span.month {
+	div.picker caption span.month {
 		padding-right: 8px;
 	}
-	div.calendar caption span.month:after {
+	div.picker caption span.month:after {
 		content: ',';
 	}
 
