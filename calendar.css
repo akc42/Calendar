@@ -1,21 +1,19 @@
 /* Calendar: a Javascript class for Mootools that adds accessible and unobtrusive date pickers to your form elements <http://electricprism.com/aeron/calendar> */
 /* Calendar CSS for Calendar (navigation: 1), Copyright (c) 2007 Aeron Glemann <http://electricprism.com/aeron> */
 div.calendar {
-	width:175px;
 	height:20px;
+	padding:2px 3px;
+	border:2px inset black;
 }
 span.calendar {
-	width: 149px;
-	border:1px dotted black;
-	padding:2px;
-	margin-right:5px;
+	font: normal 16px/22px Arial, Helvetica, sans-serif;
 }
 
 button.calendar {
 	background: url(calendar-icon.gif);
 	border: 0;
 	cursor: pointer;
-	float: left;
+	float: right;
 	height: 20px;
 	width: 20px;
 }
@@ -25,11 +23,11 @@ button.calendar.active {
 }
 
 div.picker {
-	background: url(calendar.png);
-	height: 175px;
+	background: url(calendar.png) no-repeat;
+	height: 299px;
 	padding: 0 12px;
 	text-align: center;
-	width: 147px;
+	width: 163px;
 }	
 	div.picker * {
 		margin: 0;
@@ -38,7 +36,7 @@ div.picker {
 	div.picker div {
 		background: none !important;
 		cursor: move;
-		height: 165px;
+		height: 299px;
 		overflow: hidden;
 		padding-top: 10px;
 		position: relative;
@@ -85,7 +83,7 @@ div.picker {
 		content: ',';
 	}
 
-	div.calendar table {
+	div.picker table {
 		border: 0;
 		border-collapse: collapse;
 		border-spacing: 0;
@@ -94,8 +92,8 @@ div.picker {
 		overflow: hidden;
 		width: 147px;
 	}
-	div.calendar td,
-	div.calendar th {
+	div.picker td,
+	div.picker th {
 		border: 0;
 		color: #999;
 		font: normal 12px Arial, Helvetica, sans-serif;
@@ -103,22 +101,42 @@ div.picker {
 		text-align: center;
 		width: 21px;
 	}
-	div.calendar td {
+	div.picker td {
 		color: #333;
 		font-size: 11px;
 		padding-right: 5px;
 		text-align: right;
 		width: 16px;
 	}
-	div.calendar td.invalid {
+	div.picker td.invalid {
 		color: #666;
 	}
-	div.calendar td.valid {
+	div.picker td.valid {
 		color: #FFF;
 		cursor: pointer;
 	}
-	div.calendar td.active,
-	div.calendar td.hover {
+	div.picker td.active,
+	div.picker td.hover {
 		color: #CF0;
 		cursor: pointer;
+	}
+
+	div.picker td.hour, div.picker td.minute {
+		color:#CF0;
+	}
+
+	div.picker div.unset {
+		border:1px solid #666;
+		color: #CF0;
+		cursor:pointer;
+		text-align:center;
+		height:16px;
+		width:50px;
+		font: normal 12px/17px Arial, Helvetica, sans-serif;
+		padding:2px;
+		margin:5px 0 0 40px;
+	}
+
+	div.picker div.unset:hover {
+		border-color:#CF0;
 	}
