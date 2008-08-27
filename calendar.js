@@ -60,7 +60,9 @@ Calendar = function() {
 				if (input.get('tag') != 'input') return false;
 				if (input.type != 'hidden') return false;
 				this.input = input;
-				if (this.input.value === '') this.input.value = 0;
+				if (input.value === '') {
+					this.input.value = '0';
+				}
 				// initialise where we are going to display the calender when it starts
 				// create our classes array
 				keys = ['calendar', 'picker', 'prev', 'next','nav', 'ap', 'minute', 'hour', 'month', 'year','unset', 'today', 'invalid', 'valid', 'inactive', 'active', 'hover', 'hilite'];
@@ -92,7 +94,7 @@ Calendar = function() {
 						.inject(div).addEvent('click',function(e) {
 						e.stop();
 						this.toggle();
-					}.bind(this));
+					}.bindWithEvent(this));
 				this.span = new Element('span', {'class':this.options.classes.calendar}).inject(div);
 				this.visible = false;
 				// create cal element with css styles required for proper cal functioning
@@ -146,7 +148,7 @@ Calendar = function() {
 				});
 
 				// initialize drag method
-				if (this.options.draggable) {
+/*				if (this.options.draggable) {
 					this.drag = new Drag.Move(this.picker, {
 						onDrag: function() {
 							if (window.ie6) {
@@ -158,17 +160,17 @@ Calendar = function() {
 						}.bind(this)
 					});
 				}
-				
+*/				
 				var d = new Date();
 				this.val = false;
-				if (this.input.value > 0) {
+				if (this.input.value.toInt() > 0) {
 					this.val = true;
 				}
 				// set start and end dates (which might adjust the input.value
 				this.setStart(this.options.start);
 				this.setEnd(this.options.end);
-				if (this.input.value > 0) {
-					d.setTime(this.input.value*1000);
+				if (this.input.value.toInt() > 0) {
+					d.setTime(this.input.value.toInt()*1000);
 					this.date = d.getDate(); // 1 - 31
 					this.hour = d.getHours(); // 0 - 23
 					this.min = d.getMinutes(); //'0' - '59'
@@ -223,19 +225,39 @@ Calendar = function() {
 				return (this.start) ? this.start: new Date();
 			},
 			setStart: function(start) {
+				var d;
 				this.start = (start) ? ((this.options.start) ? (
 						(start > this.options.start) ? start: this.options.start) : (start > new Date()) ? start: new Date())
 						: ((this.options.start) ? ((this.options.start > new Date()) ? this.options.start: null) : null);
-				if (this.input.value != 0 && this.input.value < this.getStart().getTime() / 1000) this.setVal(this.getStart());
+				if (this.input.value.toInt() != 0 && this.input.value.toInt() < this.getStart().getTime() / 1000) {
+					d = this.getStart();
+					this.year = d.getFullYear();
+					this.month = d.getMonth();
+					this.date = d.getDate();
+					this.hour = d.getHours(); // 0 - 23
+					this.min = d.getMinutes(); //'0' - '59'
+					this.min = this.min + (5- this.min%5);  //round to nearest 5 minutes above
+					this.setVal();
+				}
 			},
 			getEnd: function() {
 				return (this.end) ? this.end: new Date();
 			},
 			setEnd: function(end) {
+				var d;
 				this.end = (end) ? ((this.options.end) ? (
 						(end < this.options.end) ? end: this.options.end) :(end < new Date()) ? end: new Date())
 						: ((this.options.end) ? ((this.options.end < new Date()) ? this.options.end: null) : null);
-				if (this.input.value != 0 && this.input.value > this.getEnd().getTime() / 1000) this.setVal(this.getEnd());
+				if (this.input.value.toInt() != 0 && this.input.value.toInt() > this.getEnd().getTime() / 1000) {
+					d = this.getEnd();
+					this.year = d.getFullYear();
+					this.month = d.getMonth();
+					this.date = d.getDate();
+					this.hour = d.getHours(); // 0 - 23
+					this.min = d.getMinutes(); //'0' - '59'
+					this.min = this.min -this.min%5;  //round to nearest 5 minutes below
+					this.setVal();
+				}
 			},
 			toggle: function() {
 				var size;
@@ -267,7 +289,7 @@ Calendar = function() {
 						}
 						this.toggle();
 						return true;
-					}.bind(this);
+					}.bindWithEvent(this);
 
 					document.addEvent('mousedown', this.hide);
 					this.picker.empty();
@@ -304,7 +326,6 @@ Calendar = function() {
 					},this);
 
 					//get all key elements and save them
-					
 					navs = picker.getElements('.'+this.options.classes.prev);
 					navs.each(function(nav) {
 					//see if it is a year navigation
@@ -316,6 +337,7 @@ Calendar = function() {
 						}
 						nav.removeClass(this.options.classes.prev);
 					},this);
+
 					navs = picker.getElements('.'+this.options.classes.next);
 					navs.each(function(nav) {
 					//see if it is a year navigation
@@ -327,7 +349,7 @@ Calendar = function() {
 						}
 						nav.removeClass(this.options.classes.next);
 					},this);
-
+					
 					picker.getElement('.hour').empty().appendText(this.options.titles.Hr);
 					picker.getElement('.minute').empty().appendText(this.options.titles.Mi);
 					this.days = table.getElements('td'); //me need to set up the actual details dynamically
@@ -374,29 +396,26 @@ Calendar = function() {
 							this.min = -1;
 						}
 						this.checkVal();
-						this.newDay(picker);
-					}.bind(this));
+						this.newDay();
+					}.bindWithEvent(this));
 						
-					this.newDay(picker);
+					this.newDay();
 
-					this.newMorY(picker);
+					this.newMorY();
 					this.fx.start('opacity', 0, 1);
 					this.visible = true;
 				}
 			},
-			newMorY: function(picker) {
+			newMorY: function() {
 				var offset;
-				var prev;
-				var last;
-				var navs;
 				var i;
 				var dates,datee;
 				var td;
 				//put the class of the month (allows different months pictures to be done via css
-				picker.addClass(this.options.months[this.month].toLowerCase());
+				this.picker.addClass(this.options.months[this.month].toLowerCase());
 								//Now add the navigation
-				picker.getElement('.month').empty().appendText(this.options.months[this.month]);
-				picker.getElement('.year').empty().appendText(this.year);
+				this.picker.getElement('.month').empty().appendText(this.options.months[this.month]);
+				this.picker.getElement('.year').empty().appendText(this.year);
 					//see if it is a year navigation
 				if(this.navprevyear) {
 					this.navprevyear.removeEvents().removeClass(this.options.classes.prev);
@@ -405,8 +424,8 @@ Calendar = function() {
 							e.stop();
 							this.year--;
 							this.setVal();
-							this.newMorY(picker);
-						}.bind(this));
+							this.newMorY();
+						}.bindWithEvent(this));
 					}
 				}
 				if(this.navnextyear) {
@@ -416,36 +435,39 @@ Calendar = function() {
 							e.stop();
 							this.year++;
 							this.setVal();
-							this.newMorY(picker);
-						}.bind(this));
+							this.newMorY();
+						}.bindWithEvent(this));
 					}
 				}
 
 				this.navprevmonth.removeEvents().removeClass(this.options.classes.prev);
 				if (this.year !== this.getStart().getFullYear() || this.month !== this.getStart().getMonth()) {
-					this.navprevmonth.addClass(this.options.classes.prev).addEvent('click',function(e) {
+					this.navprevmonth.addEvent('click',function(e) {
 						e.stop();
+						this.picker.removeClass(this.options.months[this.month].toLowerCase());
 						this.month--;
 						if(this.month < 0) {
 							this.month=11;
 							this.year--;
 						}
 						this.setVal();
-						this.newMorY(picker);
-					}.bind(this));
+						this.newMorY();
+					}.bindWithEvent(this)).addClass(this.options.classes.prev);
 				}
+				
 				this.navnextmonth.removeEvents().removeClass(this.options.classes.next);
 				if (this.year !== this.getEnd().getFullYear() || this.month !== this.getEnd().getMonth()) {
-					this.navnextmonth.addClass(this.options.classes.next).addEvent('click',function(e) {
+					this.navnextmonth.addEvent('click',function(e) {
 						e.stop();
+						this.picker.removeClass(this.options.months[this.month].toLowerCase());
 						this.month++
 						if(this.month > 11) {
 							this.month=0;
 							this.year++;
 						}
 						this.setVal();
-						this.newMorY(picker);
-					}.bind(this));
+						this.newMorY();
+					}.bindWithEvent(this)).addClass(this.options.classes.next);
 				}
 
 				offset = ((new Date(this.year, this.month, 1).getDay() - this.options.offset) + 7) % 7; // day of the week (offset)
@@ -470,20 +492,20 @@ Calendar = function() {
 								if (this.date === i-offset+1) {
 									td.addClass(this.options.classes.active);
 								}
-								td.addEvent('click', function(i) {
+								td.addEvent('click', function(e,i) {
+									e.stop();
 									if (this.date>=0) this.days[this.date-1+offset].removeClass(this.options.classes.active);
 									this.date = i-offset+1;
 									this.days[i].addClass(this.options.classes.active);
 									this.checkVal();
-									this.newDay(picker);
-									return false;
-								}.pass(i,this));
+									this.newDay();
+								}.bindWithEvent(this,i));
 							}
 						}
 					}
 				}
 			},
-			newDay: function(picker) {
+			newDay: function() {
 				this.am.removeEvents()
 						.removeClass(this.options.classes.active)
 						.removeClass(this.options.classes.valid)
@@ -501,8 +523,8 @@ Calendar = function() {
 						this.pm.removeClass(this.options.classes.active);
 						this.am.addClass(this.options.classes.active);
 						this.checkVal();
-						this.newDay(picker);
-					}.bind(this)).addClass(this.options.classes.valid);
+						this.newDay();
+					}.bindWithEvent(this)).addClass(this.options.classes.valid);
 					if (this.hour < 12) {
 						this.am.addClass(this.options.classes.active);
 					}
@@ -525,8 +547,8 @@ Calendar = function() {
 						this.am.removeClass(this.options.classes.active);
 						this.pm.addClass(this.options.classes.active)
 						this.checkVal();
-						this.newDay(picker);
-					}.bind(this)).addClass(this.options.classes.valid);
+						this.newDay();
+					}.bindWithEvent(this)).addClass(this.options.classes.valid);
 					if(this.hour >=12) {
 						this.pm.addClass(this.options.classes.active);
 					}
@@ -556,7 +578,8 @@ Calendar = function() {
 						}
 					}
 					if(this.date<0 || (datee > this.getStart() && dates < this.getEnd())) {
-						this.hours[i].addClass(this.options.classes.valid).addEvent('click',function(hr,i) {
+						this.hours[i].addClass(this.options.classes.valid).addEvent('click',function(e,hr,i) {
+							e.stop();
 							if(this.hour>=0) {
 								this.hours[(this.hour-1)%12].removeClass(this.options.classes.active);
 								if(this.hour >= 12) {
@@ -569,9 +592,8 @@ Calendar = function() {
 							}
 							this.hours[i].addClass(this.options.classes.active);
 							this.checkVal();
-							this.newDay(picker);
-							return false;
-						}.pass([hr,i],this));
+							this.newDay();
+						}.bindWithEvent(this,[hr,i]));
 						if(this.hour%12 === hr) this.hours[i].addClass(this.options.classes.active);
 					} else {
 						this.hours[i].addClass(this.options.classes.invalid);
@@ -581,13 +603,14 @@ Calendar = function() {
 						datee.setHours(this.hour,mi,59,999);
 					}
 					if(this.date<0 || this.hour<0 || datee > this.getStart() && dates < this.getEnd()) {
-						this.mins[i].addClass(this.options.classes.valid).addEvent('click',function(mi,i) {
+						this.mins[i].addClass(this.options.classes.valid).addEvent('click',function(e,mi,i) {
+							e.stop();
 							if(this.min > 0) this.mins[(this.min/5)%12].removeClass(this.options.classes.active);
 							this.min = mi;
 							this.mins[i].addClass(this.options.classes.active);
 							this.checkVal();
 							return false;
-						}.pass([mi,i],this));
+						}.bindWithEvent(this,[mi,i]));
 						if (this.min === mi ) this.mins[i].addClass(this.options.classes.active);
 					} else {
 						this.mins[i].addClass(this.options.classes.invalid);
@@ -735,29 +758,47 @@ Calendar = function() {
 					this.calendars.push(new Calendar.Single(item,newOptions));
 				},this);
 				this.calendars.sort(function(a, b) {
-					return a.input.value - b.input.value;
+					return a.input.value.toInt() - b.input.value.toInt();
 				});
+				this.check();//check constraints are met
 			},
-			update: function() {
+			check: function() {
 				// We check all the other calendar contraints again
 				// so that they do not overlap this by the options
 				if (this.options.pad != 0) {
 					this.calendars.each(function(cal, i) {
+						var d;
+						var v;
 						if (i != 0) {
 							var prev = this.calendars[i - 1];
-							if (prev.input.value != 0) {
-								if (cal.input.value != 0) {
-									cal.setStart(new Date().setTime((prev.input.value + this.options.pad * 60) * 1000));
+							if (prev.input.value.toInt() != 0) {
+								if (cal.input.value.toInt() != 0) {
+									d=new Date();
+									v =(cal.input.value.toInt() - this.options.pad * 60);
+									d.setTime(v * 1000);
+									prev.setEnd(d);
+									if(prev.visible) prev.newMorY();
 								}
-								prev.setEnd(new Date().setTime((cal.input.value - this.options.pad * 60) * 1000));
+								d = new Date();
+								v = (prev.input.value.toInt() + this.options.pad * 60);
+								d.setTime( v * 1000);
+								cal.setStart(d);
+								if(cal.visible) cal.newMorY();
 							} else {
-								if (cal.input.value != 0) {
-									prev.setEnd(new Date().setTime((cal.input.value - this.options.pad * 60) * 1000));
+								if (cal.input.value.toInt() != 0) {
+									d=new Date();
+									v =(cal.input.value.toInt() - this.options.pad * 60);
+									d.setTime(v * 1000);
+									prev.setEnd(d);
+									if(prev.visible) prev.newMorY()
 								}
 							}
 						}
 					},this);
 				}
+			},
+			update:function () {
+				this.check(); //check constraints and then tell our clients (if they want to know)
 				this.fireEvent('update');
 			}
 		})
