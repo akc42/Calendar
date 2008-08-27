@@ -54,6 +54,14 @@ Calendar = function() {
 				var keys;
 				var values;
 				var div;
+				var size;
+				var coord;
+				var x,y;
+				var picker;
+				var table;
+				var navs;
+				var i;
+				var firsthr,firstmi,secondhr,secondmi;
 				this.setOptions(options);
 				//Basic validation
 				if ($type(input) != 'element') return false;
@@ -148,7 +156,7 @@ Calendar = function() {
 				});
 
 				// initialize drag method
-/*				if (this.options.draggable) {
+				if (this.options.draggable) {
 					this.drag = new Drag.Move(this.picker, {
 						onDrag: function() {
 							if (window.ie6) {
@@ -160,7 +168,7 @@ Calendar = function() {
 						}.bind(this)
 					});
 				}
-*/				
+				
 				var d = new Date();
 				this.val = false;
 				if (this.input.value.toInt() > 0) {
@@ -181,12 +189,117 @@ Calendar = function() {
 					
 				} else {
 					this.date = -1;
-					this.hour = -1;
+					if (d.getHours() < 12) {
+						this.hour = -1;
+					} else {
+						this.hour = -2;
+					}
 					this.min = -1;
 					this.span.set('text',this.options.nodate);
 				}
 				this.month = d.getMonth(); // 0 - 11
 				this.year = d.getFullYear(); // 19xx - 20xx
+				this.picker.empty();
+				picker = calendar.clone(true,true).inject(this.picker);
+
+				size = window.getScrollSize();
+
+				coord = this.button.getCoordinates();
+
+				x = coord.right + this.options.tweak.x;
+				y = coord.top + this.options.tweak.y;
+
+				// make sure the calendar doesn't open off screen
+				if (!this.picker.coord) this.picker.coord = this.picker.getCoordinates();
+
+				if (x + this.picker.coord.width > size.x) x -= (x + this.picker.coord.width - size.x);
+				if (y + this.picker.coord.height > size.y)  y -= (y + this.picker.coord.height - size.y);
+
+				this.picker.setStyles({ left: x + 'px', top: y + 'px' });
+
+				if (window.ie6) {
+					this.iframe.setStyles({ height: this.picker.coord.height + 'px', left: x + 'px', top: y + 'px', width: this.picker.coord.width + 'px' });
+				}
+
+
+				// heading of the day columns
+				table=picker.getElement('table');
+				table.getElements('th').each(function(el,i) {
+					var title = this.options.days[(i + this.options.offset) % 7];
+					el.empty(); //clear out marker info
+					el.appendText(title.substr(0,1));
+					el.set('title',title);
+					el.getNext();
+				},this);
+
+				//get all key elements and save them
+				navs = picker.getElements('.'+this.options.classes.prev);
+				navs.each(function(nav) {
+				//see if it is a year navigation
+					if(nav.hasClass(this.options.classes.nav)) {
+						this.navprevyear = nav;
+						nav.removeClass(this.options.classes.nav);
+					} else {
+						this.navprevmonth = nav;
+					}
+					nav.removeClass(this.options.classes.prev);
+				},this);
+
+				navs = picker.getElements('.'+this.options.classes.next);
+				navs.each(function(nav) {
+				//see if it is a year navigation
+					if(nav.hasClass(this.options.classes.nav)) {
+						this.navnextyear = nav;
+						nav.removeClass(this.options.classes.nav);
+					} else {
+						this.navnextmonth = nav;
+					}
+					nav.removeClass(this.options.classes.next);
+				},this);
+
+				picker.getElement('.hour').empty().appendText(this.options.titles.Hr);
+				picker.getElement('.minute').empty().appendText(this.options.titles.Mi);
+				this.days = table.getElements('td'); //me need to set up the actual details dynamically
+				this.am = picker.getElement('.am').empty().appendText(this.options.titles.am).removeClass('am');
+				this.pm = picker.getElement('.pm').empty().appendText(this.options.titles.pm).removeClass('pm');
+				//get key elements for hours and minutes
+				firsthr = picker.getElement('.firsthr').removeClass('firsthr');
+				firstmi = picker.getElement('.firstmi').removeClass('firstmi');
+				secondhr = picker.getElement('.secondhr').removeClass('secondhr');
+				secondmi = picker.getElement('.secondmi').removeClass('secondmi');
+				this.hours = [];
+				this.mins = [];
+				for (i = 0 ; i<6 ; i++) {
+					this.hours[i] = firsthr;
+					this.hours[i+6] = secondhr;
+					this.mins[i] = firstmi;
+					this.mins[i+6] = secondmi;
+					firsthr = firsthr.getNext();
+					secondhr = secondhr.getNext();
+					firstmi = firstmi.getNext();
+					secondmi = secondmi.getNext();
+				}
+
+				picker.getElement('.unset').empty().appendText(this.options.titles.Unset).addEvent('click',function(e) {
+					var offset = ((new Date(this.year, this.month, 1).getDay() - this.options.offset) + 7) % 7; // day of the week (offset)
+					if(this.date >=0) {
+						this.days[this.date+offset-1].removeClass(this.options.classes.active);
+						this.date = -1;
+					}
+					if (this.hour>=0) {
+						this.hours[(this.hour-1)%12].removeClass(this.options.classes.active);
+						this.am.removeClass(this.options.classes.active);
+						this.pm.removeClass(this.options.classes.active);
+					}
+					this.hour = -1;
+
+					if (this.min>=0) {
+						this.mins[this.min/5].removeClass(this.options.classes.active);
+						this.min = -1;
+					}
+					this.checkVal();
+					this.newDay();
+				}.bindWithEvent(this));
 
 
 			},
@@ -260,15 +373,6 @@ Calendar = function() {
 				}
 			},
 			toggle: function() {
-				var size;
-				var coord;
-				var x,y;
-				var picker;
-				var table;
-				var navs;
-				var i;
-				var firsthr,firstmi,secondhr,secondmi;
-				var that;
 				if (this.visible) {
 					document.removeEvent('mousedown', this.hide); // always remove the current mousedown script first
 					this.fx.start('opacity', 1, 0);
@@ -292,113 +396,7 @@ Calendar = function() {
 					}.bindWithEvent(this);
 
 					document.addEvent('mousedown', this.hide);
-					this.picker.empty();
-					picker = calendar.clone(true,true).inject(this.picker);
 
-					size = window.getScrollSize();
-			
-					coord = this.button.getCoordinates();
-
-					x = coord.right + this.options.tweak.x;
-					y = coord.top + this.options.tweak.y;
-
-					// make sure the calendar doesn't open off screen
-					if (!this.picker.coord) this.picker.coord = this.picker.getCoordinates();
-
-					if (x + this.picker.coord.width > size.x) x -= (x + this.picker.coord.width - size.x);
-					if (y + this.picker.coord.height > size.y)  y -= (y + this.picker.coord.height - size.y);
-
-					this.picker.setStyles({ left: x + 'px', top: y + 'px' });
-
-					if (window.ie6) { 
-						this.iframe.setStyles({ height: this.picker.coord.height + 'px', left: x + 'px', top: y + 'px', width: this.picker.coord.width + 'px' });
-					}
-
-					
-					// heading of the day columns
-					table=picker.getElement('table');
-					table.getElements('th').each(function(el,i) {
-						var title = this.options.days[(i + this.options.offset) % 7];
-						el.empty(); //clear out marker info
-						el.appendText(title.substr(0,1));
-						el.set('title',title);
-						el.getNext();
-					},this);
-
-					//get all key elements and save them
-					navs = picker.getElements('.'+this.options.classes.prev);
-					navs.each(function(nav) {
-					//see if it is a year navigation
-						if(nav.hasClass(this.options.classes.nav)) {
-							this.navprevyear = nav;
-							nav.removeClass(this.options.classes.nav);
-						} else {
-							this.navprevmonth = nav;
-						}
-						nav.removeClass(this.options.classes.prev);
-					},this);
-
-					navs = picker.getElements('.'+this.options.classes.next);
-					navs.each(function(nav) {
-					//see if it is a year navigation
-						if(nav.hasClass(this.options.classes.nav)) {
-							this.navnextyear = nav;
-							nav.removeClass(this.options.classes.nav);
-						} else {
-							this.navnextmonth = nav;
-						}
-						nav.removeClass(this.options.classes.next);
-					},this);
-					
-					picker.getElement('.hour').empty().appendText(this.options.titles.Hr);
-					picker.getElement('.minute').empty().appendText(this.options.titles.Mi);
-					this.days = table.getElements('td'); //me need to set up the actual details dynamically
-					this.am = picker.getElement('.am').empty().appendText(this.options.titles.am).removeClass('am');
-					this.pm = picker.getElement('.pm').empty().appendText(this.options.titles.pm).removeClass('pm');
-					//get key elements for hours and minutes
-					firsthr = picker.getElement('.firsthr').removeClass('firsthr');
-					firstmi = picker.getElement('.firstmi').removeClass('firstmi');
-					secondhr = picker.getElement('.secondhr').removeClass('secondhr');
-					secondmi = picker.getElement('.secondmi').removeClass('secondmi');
-					this.hours = [];
-					this.mins = [];
-					for (i = 0 ; i<6 ; i++) {
-						this.hours[i] = firsthr;
-						this.hours[i+6] = secondhr;
-						this.mins[i] = firstmi;
-						this.mins[i+6] = secondmi;
-						firsthr = firsthr.getNext();
-						secondhr = secondhr.getNext();
-						firstmi = firstmi.getNext();
-						secondmi = secondmi.getNext();
-					}
-
-					picker.getElement('.unset').empty().appendText(this.options.titles.Unset).addEvent('click',function(e) {
-						var offset = ((new Date(this.year, this.month, 1).getDay() - this.options.offset) + 7) % 7; // day of the week (offset)
-						if(this.date >=0) {
-							this.days[this.date+offset-1].removeClass(this.options.classes.active);
-							this.date = -1;
-						}
-						if (this.hour>=0) {
-							this.hours[(this.hour-1)%12].removeClass(this.options.classes.active);
-							if (this.hour > 12) {
-								this.pm.removeClass(this.options.classes.active);
-								this.am.addClass(this.options.classes.active);
-							}
-							this.pm.removeClass(this.options.classes.valid);
-							this.pm.removeEvents();
-							this.pm.addClass(this.options.classes.invalid);
-						}
-						this.hour = -1;
-						
-						if (this.min>=0) {
-							this.mins[this.min/5].removeClass(this.options.classes.active);
-							this.min = -1;
-						}
-						this.checkVal();
-						this.newDay();
-					}.bindWithEvent(this));
-						
 					this.newDay();
 
 					this.newMorY();
@@ -520,12 +518,13 @@ Calendar = function() {
 					this.am.addEvent('click',function(e) {
 						e.stop();
 						if(this.hour >=12) this.hour -=12;
+						if(this.hour === -2) this.hour = -1;
 						this.pm.removeClass(this.options.classes.active);
 						this.am.addClass(this.options.classes.active);
 						this.checkVal();
 						this.newDay();
 					}.bindWithEvent(this)).addClass(this.options.classes.valid);
-					if (this.hour < 12) {
+					if (this.hour < 12 && this.hour > -2) {
 						this.am.addClass(this.options.classes.active);
 					}
 				} else {
@@ -540,16 +539,17 @@ Calendar = function() {
 					dates.setHours(12,0,0,0);
 					datee.setHours(23,59,59,999);
 				}
-				if(this.hour>=0 && (this.date<0 ||  (datee > this.getStart() && dates < this.getEnd()))) {
+				if(this.date<0 ||  this.hour<0 || (datee > this.getStart() && dates < this.getEnd())) {
 					this.pm.addEvent('click',function(e) {
 						e.stop();
-						if(this.hour<12) this.hour +=12;
+						if (this.hour == -1 ) this.hour = -2;
+						if(this.hour<12 && this.hour >=0 ) this.hour +=12;
 						this.am.removeClass(this.options.classes.active);
 						this.pm.addClass(this.options.classes.active)
 						this.checkVal();
 						this.newDay();
 					}.bindWithEvent(this)).addClass(this.options.classes.valid);
-					if(this.hour >=12) {
+					if(this.hour >=12 || this.hour === -2) {
 						this.pm.addClass(this.options.classes.active);
 					}
 				} else {
@@ -588,13 +588,17 @@ Calendar = function() {
 									this.hour = hr;
 								}
 							} else {
-								this.hour = hr;
+								if (this.hour === -1 ) {
+									this.hour = hr;
+								} else {
+									this.hour = hr+12;
+								}
 							}
 							this.hours[i].addClass(this.options.classes.active);
 							this.checkVal();
 							this.newDay();
 						}.bindWithEvent(this,[hr,i]));
-						if(this.hour%12 === hr) this.hours[i].addClass(this.options.classes.active);
+						if(this.hour >= 0 && this.hour%12 === hr) this.hours[i].addClass(this.options.classes.active);
 					} else {
 						this.hours[i].addClass(this.options.classes.invalid);
 					}

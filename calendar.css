@@ -50,15 +50,20 @@ div.picker {
 		text-align: center;
 		width: 100%;
 	}
+
 	div.picker caption a {
+		display:none;
+	}
+	
+	div.picker caption a.prev, div.picker caption a.next {
 		cursor: pointer;
 		display: block;
 		height: 11px;
 		overflow: hidden;
 		position: absolute;
-		text-indent: -100px;
 		top: 16px;
 		width: 11px;
+		text-indent: -100px;
 	}
 	div.picker caption a.prev {
 		background-image: url(calendar-prev.gif);
