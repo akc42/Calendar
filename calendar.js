@@ -190,7 +190,14 @@ Calendar = function() {
 			},
 			setVal: function() {
 				if (this.val) {
-					var d = new Date(this.year,this.month,this.date,this.hour,(this.min-this.min%5))
+					var d = new Date(this.year,this.month,this.date,this.hour,this.min)
+					if (d < this.getStart()) {
+						d=this.getStart();
+					} else {
+						if (d > this.getEnd()) {
+							d = this.getEnd();
+						}
+					}
 					this.input.value = d.getTime() / 1000;
 					this.span.set('text', this.format(d));
 				} else {
@@ -297,6 +304,30 @@ Calendar = function() {
 					},this);
 
 					//get all key elements and save them
+					
+					navs = picker.getElements('.'+this.options.classes.prev);
+					navs.each(function(nav) {
+					//see if it is a year navigation
+						if(nav.hasClass(this.options.classes.nav)) {
+							this.navprevyear = nav;
+							nav.removeClass(this.options.classes.nav);
+						} else {
+							this.navprevmonth = nav;
+						}
+						nav.removeClass(this.options.classes.prev);
+					},this);
+					navs = picker.getElements('.'+this.options.classes.next);
+					navs.each(function(nav) {
+					//see if it is a year navigation
+						if(nav.hasClass(this.options.classes.nav)) {
+							this.navnextyear = nav;
+							nav.removeClass(this.options.classes.nav);
+						} else {
+							this.navnextmonth = nav;
+						}
+						nav.removeClass(this.options.classes.next);
+					},this);
+
 					picker.getElement('.hour').empty().appendText(this.options.titles.Hr);
 					picker.getElement('.minute').empty().appendText(this.options.titles.Mi);
 					this.days = table.getElements('td'); //me need to set up the actual details dynamically
@@ -343,6 +374,7 @@ Calendar = function() {
 							this.min = -1;
 						}
 						this.checkVal();
+						this.newDay(picker);
 					}.bind(this));
 						
 					this.newDay(picker);
@@ -358,86 +390,82 @@ Calendar = function() {
 				var last;
 				var navs;
 				var i;
-				var date;
+				var dates,datee;
 				var td;
 				//put the class of the month (allows different months pictures to be done via css
 				picker.addClass(this.options.months[this.month].toLowerCase());
 								//Now add the navigation
 				picker.getElement('.month').empty().appendText(this.options.months[this.month]);
 				picker.getElement('.year').empty().appendText(this.year);
-				navs = picker.getElements('.'+this.options.classes.prev);
-				navs.each(function(nav) {
-					nav.removeEvents();
 					//see if it is a year navigation
-					if(nav.hasClass(this.options.classes.nav)) {
-						if(this.year !== this.getStart().getFullYear()) {
-							nav.addEvent('click',function(e) {
-								e.stop();
-								this.year--;
-								this.setVal();
-								this.newMorY(picker);
-							}.bind(this));
-						}
-					} else {
-						if (this.year !== this.getStart().getFullYear() && this.month !== this.getStart().getMonth()) {
-							nav.addEvent('click',function(e) {
-								e.stop();
-								this.month--;
-								if(this.month < 0) {
-									this.month=11;
-									this.year--;
-								}
-								this.setVal();
-								this.newMorY(picker);
-							}.bind(this));
-						}
+				if(this.navprevyear) {
+					this.navprevyear.removeEvents().removeClass(this.options.classes.prev);
+					if(this.year !== this.getStart().getFullYear()) {
+						this.navprevyear.addClass(this.options.classes.prev).addEvent('click',function(e) {
+							e.stop();
+							this.year--;
+							this.setVal();
+							this.newMorY(picker);
+						}.bind(this));
 					}
-				},this);
-				navs = picker.getElements('.'+this.options.classes.next);
-				navs.each(function(nav) {
-					nav.removeEvents();
-					//see if it is a year navigation
-					if(nav.hasClass(this.options.classes.nav)) {
-						if(this.year !== this.getEnd().getFullYear()) {
-							nav.addEvent('click',function(e) {
-								e.stop();
-								this.year++;
-								this.setVal();
-								this.newMorY(picker);
-							}.bind(this));
-						}
-					} else {
-						if (this.year !== this.getEnd().getFullYear() && this.month !== this.getEnd().getMonth()) {
-							nav.addEvent('click',function(e) {
-								e.stop();
-								this.month++;
-								if(this.month > 11) {
-									this.month=0;
-									this.year++;
-								}
-								this.setVal();
-								this.newMorY(picker);
-							}.bind(this));
-						}
+				}
+				if(this.navnextyear) {
+					this.navnextyear.removeEvents().removeClass(this.options.classes.next);
+					if(this.year !== this.getEnd().getFullYear()) {
+						this.navnextyear.addClass(this.options.classes.next).addEvent('click',function(e) {
+							e.stop();
+							this.year++;
+							this.setVal();
+							this.newMorY(picker);
+						}.bind(this));
 					}
-				},this);
-				//next do the day columns
+				}
+
+				this.navprevmonth.removeEvents().removeClass(this.options.classes.prev);
+				if (this.year !== this.getStart().getFullYear() || this.month !== this.getStart().getMonth()) {
+					this.navprevmonth.addClass(this.options.classes.prev).addEvent('click',function(e) {
+						e.stop();
+						this.month--;
+						if(this.month < 0) {
+							this.month=11;
+							this.year--;
+						}
+						this.setVal();
+						this.newMorY(picker);
+					}.bind(this));
+				}
+				this.navnextmonth.removeEvents().removeClass(this.options.classes.next);
+				if (this.year !== this.getEnd().getFullYear() || this.month !== this.getEnd().getMonth()) {
+					this.navnextmonth.addClass(this.options.classes.next).addEvent('click',function(e) {
+						e.stop();
+						this.month++
+						if(this.month > 11) {
+							this.month=0;
+							this.year++;
+						}
+						this.setVal();
+						this.newMorY(picker);
+					}.bind(this));
+				}
 
 				offset = ((new Date(this.year, this.month, 1).getDay() - this.options.offset) + 7) % 7; // day of the week (offset)
 				for ( i = 0; i < 42; i++) { // 1 to 42 (6 x 7 or 6 weeks)
-					date = new Date(this.year,this.month,i-offset+1);
+					dates = new Date(this.year,this.month,i-offset+1);
+					datee = new Date(dates);
+					dates.setHours(0,0,0,0);
+					datee.setHours(23,59,59,999);
 					td = this.days[i]
-					td.empty().appendText(date.getDate()).removeEvents()
+					td.empty().appendText(dates.getDate()).removeEvents()
 							.removeClass(this.options.classes.valid)
 							.removeClass(this.options.classes.invalid)
 							.removeClass(this.options.classes.active);
-					if(this.getStart()>date) {
+					if(this.getStart()>datee) {
 						td.addClass(this.options.classes.invalid);
 					} else {
-						if (this.getEnd() < date) {
+						if (this.getEnd() < dates) {
 							td.addClass(this.options.classes.invalid);
 						} else {
-							if(date.getMonth() === this.month) {
+							if(dates.getMonth() === this.month) {
 								td.addClass(this.options.classes.valid);
 								if (this.date === i-offset+1) {
 									td.addClass(this.options.classes.active);
@@ -473,6 +501,7 @@ Calendar = function() {
 						this.pm.removeClass(this.options.classes.active);
 						this.am.addClass(this.options.classes.active);
 						this.checkVal();
+						this.newDay(picker);
 					}.bind(this)).addClass(this.options.classes.valid);
 					if (this.hour < 12) {
 						this.am.addClass(this.options.classes.active);
@@ -496,6 +525,7 @@ Calendar = function() {
 						this.am.removeClass(this.options.classes.active);
 						this.pm.addClass(this.options.classes.active)
 						this.checkVal();
+						this.newDay(picker);
 					}.bind(this)).addClass(this.options.classes.valid);
 					if(this.hour >=12) {
 						this.pm.addClass(this.options.classes.active);
@@ -506,6 +536,8 @@ Calendar = function() {
 					
 
 				for (i = 0; i<12 ; i++) {
+					var hr = (i+1)%12;
+					var mi = i*5;
 					this.hours[i].removeEvents()
 						.removeClass(this.options.classes.active)
 						.removeClass(this.options.classes.valid)
@@ -515,43 +547,48 @@ Calendar = function() {
 						.removeClass(this.options.classes.valid)
 						.removeClass(this.options.classes.invalid);
 					if (this.date>=0) {
-						dates.setHours(i,0,0,0);
-						datee.setHours(i,59,59,999);
+						if(this.hour >=12) {
+							dates.setHours(hr+12,0,0,0);
+							datee.setHours(hr+12,59,59,999);
+						} else {
+							dates.setHours(hr,0,0,0);
+							datee.setHours(hr,59,59,999);
+						}
 					}
 					if(this.date<0 || (datee > this.getStart() && dates < this.getEnd())) {
-						this.hours[i].addClass(this.options.classes.valid).addEvent('click',function(i) {
+						this.hours[i].addClass(this.options.classes.valid).addEvent('click',function(hr,i) {
 							if(this.hour>=0) {
 								this.hours[(this.hour-1)%12].removeClass(this.options.classes.active);
 								if(this.hour >= 12) {
-									this.hour = (i+1)%12+12;
+									this.hour = hr+12;
 								} else {
-									this.hour = (i+1)%12;
+									this.hour = hr;
 								}
 							} else {
-								this.hour = (i+1)%12;
-								this.newDay(picker);
+								this.hour = hr;
 							}
-							this.checkVal();
 							this.hours[i].addClass(this.options.classes.active);
+							this.checkVal();
+							this.newDay(picker);
 							return false;
-						}.pass(i,this));
-						if(this.hour>=0 && (this.hour-1)%12 === i) this.hours[i].addClass(this.options.classes.active);
+						}.pass([hr,i],this));
+						if(this.hour%12 === hr) this.hours[i].addClass(this.options.classes.active);
 					} else {
 						this.hours[i].addClass(this.options.classes.invalid);
 					}
 					if (this.date>=0 && this.hour>=0) {
-						dates.setHours(this.hour,i,0,0);
-						datee.setHours(this.hour,i,59,999);
+						dates.setHours(this.hour,mi,0,0);
+						datee.setHours(this.hour,mi,59,999);
 					}
 					if(this.date<0 || this.hour<0 || datee > this.getStart() && dates < this.getEnd()) {
-						this.mins[i].addClass(this.options.classes.valid).addEvent('click',function(i) {
+						this.mins[i].addClass(this.options.classes.valid).addEvent('click',function(mi,i) {
 							if(this.min > 0) this.mins[(this.min/5)%12].removeClass(this.options.classes.active);
-							this.min = i * 5;
+							this.min = mi;
 							this.mins[i].addClass(this.options.classes.active);
 							this.checkVal();
 							return false;
-						}.pass(i,this));
-						if (this.min >= 0 && this.min === i*5 ) this.mins[i].addClass(this.options.classes.active);
+						}.pass([mi,i],this));
+						if (this.min === mi ) this.mins[i].addClass(this.options.classes.active);
 					} else {
 						this.mins[i].addClass(this.options.classes.invalid);
 					}
