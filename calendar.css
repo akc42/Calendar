@@ -6,7 +6,7 @@ div.calendar {
 	border:2px inset black;
 }
 span.calendar {
-	font: normal 16px/22px Arial, Helvetica, sans-serif;
+	font: normal 16px/18px Arial, Helvetica, sans-serif;
 }
 
 button.calendar {
@@ -27,7 +27,9 @@ div.picker {
 	height: 299px;
 	padding: 0 12px;
 	text-align: center;
-	width: 163px;
+	width: 147px;
+	font: normal 16px/20px verdana, Helvetica, sans-serif;
+
 }	
 	div.picker * {
 		margin: 0;
@@ -36,7 +38,7 @@ div.picker {
 	div.picker div {
 		background: none !important;
 		cursor: move;
-		height: 299px;
+		height: 289px;
 		overflow: hidden;
 		padding-top: 10px;
 		position: relative;
