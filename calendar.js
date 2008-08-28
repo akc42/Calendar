@@ -636,7 +636,7 @@ Calendar = function() {
 					if(this.date<0 || this.hour<0 || datee > this.getStart() && dates < this.getEnd()) {
 						this.mins[i].addClass(this.options.classes.valid).addEvent('click',function(e,mi,i) {
 							e.stop();
-							if(this.min > 0) this.mins[(this.min/5)%12].removeClass(this.options.classes.active);
+							if(this.min >= 0) this.mins[(this.min/5)%12].removeClass(this.options.classes.active);
 							this.min = mi;
 							this.mins[i].addClass(this.options.classes.active);
 							this.checkVal();
