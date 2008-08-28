@@ -123,8 +123,8 @@ div.picker {
 		cursor: pointer;
 	}
 	div.picker td.active,
-	div.picker td.hover {
-		color: #CF0;
+	div.picker td:hover {
+		color: red;
 		cursor: pointer;
 	}
 
