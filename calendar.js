@@ -6,6 +6,8 @@
 */
 
 Calendar = function() {
+	var calendarloaded = false;
+	var calrequested = false;
 	var url;
 	var scripts = document.getElements('script');
 	scripts.every(function(script) {
@@ -16,8 +18,33 @@ Calendar = function() {
 		}
 		return true;
 	});
-	var calendar = new Element('div');
-	calendar.load(url);
+	var calcopy = new Element('div');
+	var calqueue = new Chain();
+	var calendar = function(bind,callback) {
+		if (calendarloaded) {
+			var calling = callback.bind(bind);
+			calling(calcopy.clone(true,true));
+			calqueue.callChain();
+			return true;
+		}
+		if(!calrequested) {
+			var req = new Request.HTML({
+				url:url,
+				onSuccess:function(html) {
+					calcopy.adopt(html);
+					calendarloaded = true;
+					var i=0;
+					calqueue.callChain();
+				}
+			});
+			req.get();
+			calrequested = true;
+		}
+		calqueue.chain(arguments.callee.bind(this,[bind,callback]));
+		return false;
+	}
+
+
 	return {
 		Single: new Class({
 			Implements: [Events, Options],
@@ -54,14 +81,6 @@ Calendar = function() {
 				var keys;
 				var values;
 				var div;
-				var size;
-				var coord;
-				var x,y;
-				var picker;
-				var table;
-				var navs;
-				var i;
-				var firsthr,firstmi,secondhr,secondmi;
 				this.setOptions(options);
 				//Basic validation
 				if ($type(input) != 'element') return false;
@@ -98,11 +117,7 @@ Calendar = function() {
 
 				div = new Element('div', {'class': this.options.classes.calendar,'style' : 'width:'+this.options.width});
 				div.wraps(input);
-				this.button = new Element('button', {'type': 'button','class': this.options.classes.calendar})
-						.inject(div).addEvent('click',function(e) {
-						e.stop();
-						this.toggle();
-					}.bindWithEvent(this));
+				this.button = new Element('button', {'type': 'button','class': this.options.classes.calendar}).inject(div);
 				this.span = new Element('span', {'class':this.options.classes.calendar}).inject(div);
 				this.visible = false;
 				// create cal element with css styles required for proper cal functioning
@@ -199,108 +214,120 @@ Calendar = function() {
 				}
 				this.month = d.getMonth(); // 0 - 11
 				this.year = d.getFullYear(); // 19xx - 20xx
+
 				this.picker.empty();
-				picker = calendar.clone(true,true).inject(this.picker);
 
-				size = window.getScrollSize();
+				calendar(this,function(picker) {
+					var size;
+					var coord;
+					var x,y;
+					var table;
+					var navs;
+					var i;
+					var firsthr,firstmi,secondhr,secondmi;
+					
+					picker.inject(this.picker);
+					this.button.addEvent('click',function(e) {
+						e.stop();
+						this.toggle();
+					}.bindWithEvent(this));
+					size = window.getScrollSize();
+					coord = this.button.getCoordinates();
+					x = coord.right + this.options.tweak.x;
+					y = coord.top + this.options.tweak.y;
 
-				coord = this.button.getCoordinates();
+					// make sure the calendar doesn't open off screen
+					if (!this.picker.coord) this.picker.coord = this.picker.getCoordinates();
 
-				x = coord.right + this.options.tweak.x;
-				y = coord.top + this.options.tweak.y;
+					if (x + this.picker.coord.width > size.x) x -= (x + this.picker.coord.width - size.x);
+					if (y + this.picker.coord.height > size.y)  y -= (y + this.picker.coord.height - size.y);
 
-				// make sure the calendar doesn't open off screen
-				if (!this.picker.coord) this.picker.coord = this.picker.getCoordinates();
+					this.picker.setStyles({ left: x + 'px', top: y + 'px' });
 
-				if (x + this.picker.coord.width > size.x) x -= (x + this.picker.coord.width - size.x);
-				if (y + this.picker.coord.height > size.y)  y -= (y + this.picker.coord.height - size.y);
-
-				this.picker.setStyles({ left: x + 'px', top: y + 'px' });
-
-				if (window.ie6) {
-					this.iframe.setStyles({ height: this.picker.coord.height + 'px', left: x + 'px', top: y + 'px', width: this.picker.coord.width + 'px' });
-				}
-
-
-				// heading of the day columns
-				table=picker.getElement('table');
-				table.getElements('th').each(function(el,i) {
-					var title = this.options.days[(i + this.options.offset) % 7];
-					el.empty(); //clear out marker info
-					el.appendText(title.substr(0,1));
-					el.set('title',title);
-					el.getNext();
-				},this);
-
-				//get all key elements and save them
-				navs = picker.getElements('.'+this.options.classes.prev);
-				navs.each(function(nav) {
-				//see if it is a year navigation
-					if(nav.hasClass(this.options.classes.nav)) {
-						this.navprevyear = nav;
-						nav.removeClass(this.options.classes.nav);
-					} else {
-						this.navprevmonth = nav;
+					if (window.ie6) {
+						this.iframe.setStyles({ height: this.picker.coord.height + 'px', left: x + 'px', top: y + 'px', width: this.picker.coord.width + 'px' });
 					}
-					nav.removeClass(this.options.classes.prev);
-				},this);
 
-				navs = picker.getElements('.'+this.options.classes.next);
-				navs.each(function(nav) {
-				//see if it is a year navigation
-					if(nav.hasClass(this.options.classes.nav)) {
-						this.navnextyear = nav;
-						nav.removeClass(this.options.classes.nav);
-					} else {
-						this.navnextmonth = nav;
+
+					// heading of the day columns
+					table=picker.getElement('table');
+					table.getElements('th').each(function(el,i) {
+						var title = this.options.days[(i + this.options.offset) % 7];
+						el.empty(); //clear out marker info
+						el.appendText(title.substr(0,1));
+						el.set('title',title);
+						el.getNext();
+					},this);
+
+					//get all key elements and save them
+					navs = picker.getElements('.'+this.options.classes.prev);
+					navs.each(function(nav) {
+					//see if it is a year navigation
+						if(nav.hasClass(this.options.classes.nav)) {
+							this.navprevyear = nav;
+							nav.removeClass(this.options.classes.nav);
+						} else {
+							this.navprevmonth = nav;
+						}
+						nav.removeClass(this.options.classes.prev);
+					},this);
+
+					navs = picker.getElements('.'+this.options.classes.next);
+					navs.each(function(nav) {
+					//see if it is a year navigation
+						if(nav.hasClass(this.options.classes.nav)) {
+							this.navnextyear = nav;
+							nav.removeClass(this.options.classes.nav);
+						} else {
+							this.navnextmonth = nav;
+						}
+						nav.removeClass(this.options.classes.next);
+					},this);
+
+					picker.getElement('.hour').empty().appendText(this.options.titles.Hr);
+					picker.getElement('.minute').empty().appendText(this.options.titles.Mi);
+					this.days = table.getElements('td'); //me need to set up the actual details dynamically
+					this.am = picker.getElement('.am').empty().appendText(this.options.titles.am).removeClass('am');
+					this.pm = picker.getElement('.pm').empty().appendText(this.options.titles.pm).removeClass('pm');
+					//get key elements for hours and minutes
+					firsthr = picker.getElement('.firsthr').removeClass('firsthr');
+					firstmi = picker.getElement('.firstmi').removeClass('firstmi');
+					secondhr = picker.getElement('.secondhr').removeClass('secondhr');
+					secondmi = picker.getElement('.secondmi').removeClass('secondmi');
+					this.hours = [];
+					this.mins = [];
+					for (i = 0 ; i<6 ; i++) {
+						this.hours[i] = firsthr;
+						this.hours[i+6] = secondhr;
+						this.mins[i] = firstmi;
+						this.mins[i+6] = secondmi;
+						firsthr = firsthr.getNext();
+						secondhr = secondhr.getNext();
+						firstmi = firstmi.getNext();
+						secondmi = secondmi.getNext();
 					}
-					nav.removeClass(this.options.classes.next);
-				},this);
 
-				picker.getElement('.hour').empty().appendText(this.options.titles.Hr);
-				picker.getElement('.minute').empty().appendText(this.options.titles.Mi);
-				this.days = table.getElements('td'); //me need to set up the actual details dynamically
-				this.am = picker.getElement('.am').empty().appendText(this.options.titles.am).removeClass('am');
-				this.pm = picker.getElement('.pm').empty().appendText(this.options.titles.pm).removeClass('pm');
-				//get key elements for hours and minutes
-				firsthr = picker.getElement('.firsthr').removeClass('firsthr');
-				firstmi = picker.getElement('.firstmi').removeClass('firstmi');
-				secondhr = picker.getElement('.secondhr').removeClass('secondhr');
-				secondmi = picker.getElement('.secondmi').removeClass('secondmi');
-				this.hours = [];
-				this.mins = [];
-				for (i = 0 ; i<6 ; i++) {
-					this.hours[i] = firsthr;
-					this.hours[i+6] = secondhr;
-					this.mins[i] = firstmi;
-					this.mins[i+6] = secondmi;
-					firsthr = firsthr.getNext();
-					secondhr = secondhr.getNext();
-					firstmi = firstmi.getNext();
-					secondmi = secondmi.getNext();
-				}
+					picker.getElement('.unset').empty().appendText(this.options.titles.Unset).addEvent('click',function(e) {
+						var offset = ((new Date(this.year, this.month, 1).getDay() - this.options.offset) + 7) % 7; // day of the week (offset)
+						if(this.date >=0) {
+							this.days[this.date+offset-1].removeClass(this.options.classes.active);
+							this.date = -1;
+						}
+						if (this.hour>=0) {
+							this.hours[(this.hour-1)%12].removeClass(this.options.classes.active);
+							this.am.removeClass(this.options.classes.active);
+							this.pm.removeClass(this.options.classes.active);
+						}
+						this.hour = -1;
 
-				picker.getElement('.unset').empty().appendText(this.options.titles.Unset).addEvent('click',function(e) {
-					var offset = ((new Date(this.year, this.month, 1).getDay() - this.options.offset) + 7) % 7; // day of the week (offset)
-					if(this.date >=0) {
-						this.days[this.date+offset-1].removeClass(this.options.classes.active);
-						this.date = -1;
-					}
-					if (this.hour>=0) {
-						this.hours[(this.hour-1)%12].removeClass(this.options.classes.active);
-						this.am.removeClass(this.options.classes.active);
-						this.pm.removeClass(this.options.classes.active);
-					}
-					this.hour = -1;
-
-					if (this.min>=0) {
-						this.mins[this.min/5].removeClass(this.options.classes.active);
-						this.min = -1;
-					}
-					this.checkVal();
-					this.newDay();
-				}.bindWithEvent(this));
-
+						if (this.min>=0) {
+							this.mins[this.min/5].removeClass(this.options.classes.active);
+							this.min = -1;
+						}
+						this.checkVal();
+						this.newDay();
+					}.bindWithEvent(this));
+				});
 
 			},
 			setVal: function() {
