@@ -193,15 +193,7 @@ Calendar = function() {
 				this.setStart(this.options.start);
 				this.setEnd(this.options.end);
 				if (this.input.value.toInt() > 0) {
-					d.setTime(this.input.value.toInt()*1000);
-					this.date = d.getDate(); // 1 - 31
-					this.hour = d.getHours(); // 0 - 23
-					this.min = d.getMinutes(); //'0' - '59'
-					this.min = this.min - this.min%5;  //round to nearest 5 minutes below
-					// Also need to format this date in the span
-					this.span.set('text', this.format(d));
-
-					
+					this.resetVal();
 				} else {
 					this.date = -1;
 					if (d.getHours() < 12) {
@@ -330,6 +322,16 @@ Calendar = function() {
 				});
 
 			},
+			resetVal:function () {
+				var d = new Date();
+				d.setTime(this.input.value.toInt()*1000);
+				this.date = d.getDate(); // 1 - 31
+				this.hour = d.getHours(); // 0 - 23
+				this.min = d.getMinutes(); //'0' - '59'
+				this.min = this.min - this.min%5;  //round to nearest 5 minutes below
+				// Also need to format this date in the span
+				this.span.set('text', this.format(d));	
+			},
 			setVal: function() {
 				if (this.val) {
 					var d = new Date(this.year,this.month,this.date,this.hour,this.min)
@@ -370,14 +372,8 @@ Calendar = function() {
 						(start > this.options.start) ? start: this.options.start) : (start > new Date()) ? start: new Date())
 						: ((this.options.start) ? ((this.options.start > new Date()) ? this.options.start: null) : null);
 				if (this.input.value.toInt() != 0 && this.input.value.toInt() < this.getStart().getTime() / 1000) {
-					d = this.getStart();
-					this.year = d.getFullYear();
-					this.month = d.getMonth();
-					this.date = d.getDate();
-					this.hour = d.getHours(); // 0 - 23
-					this.min = d.getMinutes(); //'0' - '59'
-					this.min = this.min + (5- this.min%5);  //round to nearest 5 minutes above
-					this.setVal();
+					this.min = -1; //invalidate it but leave date the same
+					this.val = false;
 				}
 			},
 			getEnd: function() {
@@ -389,14 +385,8 @@ Calendar = function() {
 						(end < this.options.end) ? end: this.options.end) :(end < new Date()) ? end: new Date())
 						: ((this.options.end) ? ((this.options.end < new Date()) ? this.options.end: null) : null);
 				if (this.input.value.toInt() != 0 && this.input.value.toInt() > this.getEnd().getTime() / 1000) {
-					d = this.getEnd();
-					this.year = d.getFullYear();
-					this.month = d.getMonth();
-					this.date = d.getDate();
-					this.hour = d.getHours(); // 0 - 23
-					this.min = d.getMinutes(); //'0' - '59'
-					this.min = this.min -this.min%5;  //round to nearest 5 minutes below
-					this.setVal();
+					this.min = -1; //invalidate it.
+					this.val = false;
 				}
 			},
 			toggle: function() {
