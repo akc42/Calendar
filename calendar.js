@@ -184,7 +184,6 @@ Calendar = function() {
 					});
 				}
 				
-				var d = new Date();
 				this.val = false;
 				if (this.input.value.toInt() > 0) {
 					this.val = true;
@@ -192,21 +191,7 @@ Calendar = function() {
 				// set start and end dates (which might adjust the input.value
 				this.setStart(this.options.start);
 				this.setEnd(this.options.end);
-				if (this.input.value.toInt() > 0) {
-					this.resetVal();
-				} else {
-					this.date = -1;
-					if (d.getHours() < 12) {
-						this.hour = -1;
-					} else {
-						this.hour = -2;
-					}
-					this.min = -1;
-					this.span.set('text',this.options.nodate);
-				}
-				this.month = d.getMonth(); // 0 - 11
-				this.year = d.getFullYear(); // 19xx - 20xx
-
+				this.resetVal();
 				this.picker.empty();
 
 				calendar(this,function(picker) {
@@ -306,7 +291,7 @@ Calendar = function() {
 							this.date = -1;
 						}
 						if (this.hour>=0) {
-							this.hours[(this.hour-1)%12].removeClass(this.options.classes.active);
+							this.hours[this.hour%12].removeClass(this.options.classes.active);
 							this.am.removeClass(this.options.classes.active);
 							this.pm.removeClass(this.options.classes.active);
 						}
@@ -322,15 +307,28 @@ Calendar = function() {
 				});
 
 			},
-			resetVal:function () {
+			resetVal: function() {
 				var d = new Date();
-				d.setTime(this.input.value.toInt()*1000);
-				this.date = d.getDate(); // 1 - 31
-				this.hour = d.getHours(); // 0 - 23
-				this.min = d.getMinutes(); //'0' - '59'
-				this.min = this.min - this.min%5;  //round to nearest 5 minutes below
-				// Also need to format this date in the span
-				this.span.set('text', this.format(d));	
+				if (this.input.value.toInt() > 0) {
+					d.setTime(this.input.value.toInt()*1000);
+					this.date = d.getDate(); // 1 - 31
+					this.hour = d.getHours(); // 0 - 23
+					this.min = d.getMinutes(); //'0' - '59'
+					this.min = this.min - this.min%5;  //round to nearest 5 minutes below
+					// Also need to format this date in the span
+					this.span.set('text', this.format(d));	
+				} else {
+					this.date = -1;
+					if (d.getHours() < 12) {
+						this.hour = -1;
+					} else {
+						this.hour = -2;
+					}
+					this.min = -1;
+					this.span.set('text',this.options.nodate);
+				}
+				this.month = d.getMonth(); // 0 - 11
+				this.year = d.getFullYear(); // 19xx - 20xx				
 			},
 			setVal: function() {
 				if (this.val) {
@@ -426,6 +424,7 @@ Calendar = function() {
 				var i;
 				var dates,datee;
 				var td;
+				var today,d;
 				//put the class of the month (allows different months pictures to be done via css
 				this.picker.addClass(this.options.months[this.month].toLowerCase());
 								//Now add the navigation
@@ -486,6 +485,10 @@ Calendar = function() {
 				}
 
 				offset = ((new Date(this.year, this.month, 1).getDay() - this.options.offset) + 7) % 7; // day of the week (offset)
+				d= new Date();
+				if (this.year == d.getFullYear() && this.month == d.getMonth()) {
+					today = d.getDate() -1 + offset;
+				}
 				for ( i = 0; i < 42; i++) { // 1 to 42 (6 x 7 or 6 weeks)
 					dates = new Date(this.year,this.month,i-offset+1);
 					datee = new Date(dates);
@@ -495,7 +498,8 @@ Calendar = function() {
 					td.empty().appendText(dates.getDate()).removeEvents()
 							.removeClass(this.options.classes.valid)
 							.removeClass(this.options.classes.invalid)
-							.removeClass(this.options.classes.active);
+							.removeClass(this.options.classes.active)
+							.removeClass(this.options.classes.today);
 					if(this.getStart()>datee) {
 						td.addClass(this.options.classes.invalid);
 					} else {
@@ -503,13 +507,13 @@ Calendar = function() {
 							td.addClass(this.options.classes.invalid);
 						} else {
 							if(dates.getMonth() === this.month) {
+								//CSS should make the most important of these stand out
 								td.addClass(this.options.classes.valid);
-								if (this.date === i-offset+1) {
-									td.addClass(this.options.classes.active);
-								}
+								if (today === i) td.addClass(this.options.classes.today);
+								if (this.date === i-offset+1) td.addClass(this.options.classes.active);
 								td.addEvent('click', function(e,i) {
 									e.stop();
-									if (this.date>=0) this.days[this.date-1+offset].removeClass(this.options.classes.active);
+									if (this.date>=0)this.days[this.date-1+offset].removeClass(this.options.classes.active);
 									this.date = i-offset+1;
 									this.days[i].addClass(this.options.classes.active);
 									this.checkVal();
@@ -575,7 +579,6 @@ Calendar = function() {
 					
 
 				for (i = 0; i<12 ; i++) {
-					var hr = (i+1)%12;
 					var mi = i*5;
 					this.hours[i].removeEvents()
 						.removeClass(this.options.classes.active)
@@ -587,35 +590,35 @@ Calendar = function() {
 						.removeClass(this.options.classes.invalid);
 					if (this.date>=0) {
 						if(this.hour >=12) {
-							dates.setHours(hr+12,0,0,0);
-							datee.setHours(hr+12,59,59,999);
+							dates.setHours(i+12,0,0,0);
+							datee.setHours(i+12,59,59,999);
 						} else {
-							dates.setHours(hr,0,0,0);
-							datee.setHours(hr,59,59,999);
+							dates.setHours(i,0,0,0);
+							datee.setHours(i,59,59,999);
 						}
 					}
 					if(this.date<0 || (datee > this.getStart() && dates < this.getEnd())) {
-						this.hours[i].addClass(this.options.classes.valid).addEvent('click',function(e,hr,i) {
+						this.hours[i].addClass(this.options.classes.valid).addEvent('click',function(e,i) {
 							e.stop();
 							if(this.hour>=0) {
-								this.hours[(this.hour-1)%12].removeClass(this.options.classes.active);
+								this.hours[this.hour%12].removeClass(this.options.classes.active);
 								if(this.hour >= 12) {
-									this.hour = hr+12;
+									this.hour = i+12;
 								} else {
-									this.hour = hr;
+									this.hour = i;
 								}
 							} else {
 								if (this.hour === -1 ) {
-									this.hour = hr;
+									this.hour = i;
 								} else {
-									this.hour = hr+12;
+									this.hour = i+12;
 								}
 							}
 							this.hours[i].addClass(this.options.classes.active);
 							this.checkVal();
 							this.newDay();
-						}.bindWithEvent(this,[hr,i]));
-						if(this.hour >= 0 && this.hour%12 === hr) this.hours[i].addClass(this.options.classes.active);
+						}.bindWithEvent(this,i));
+						if(this.hour >= 0 && this.hour%12 === i) this.hours[i].addClass(this.options.classes.active);
 					} else {
 						this.hours[i].addClass(this.options.classes.invalid);
 					}

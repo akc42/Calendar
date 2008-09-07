@@ -122,11 +122,16 @@ div.picker {
 		color: #FFF;
 		cursor: pointer;
 	}
+	div.picker td.today {
+		color:#CF0;
+		cursor:pointer;
+	}
 	div.picker td.active,
 	div.picker td:hover {
 		color: red;
 		cursor: pointer;
 	}
+
 
 	div.picker td.hour, div.picker td.minute {
 		color:#CF0;
