@@ -41,3 +41,6 @@ new Calendar.Multiple(inputs,options);
 where +inputs+ is an array of `<input>` elements and +options+ is a literal object containing additional optional parameters.
 
 
+NOTE:  There is a copy of this code inside MBBall which may be more up
+to date.  It generally received updates ahead of this version as
+entering dates AND times is most important for that applicaton
